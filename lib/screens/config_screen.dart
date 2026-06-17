@@ -15,13 +15,12 @@ import 'tabs/log_tab.dart';
 class ConfigScreen extends StatefulWidget {
   const ConfigScreen({super.key});
   @override
-  State<ConfigScreen> createState() => _ConfigScreenState();
+  State<ConfigScreen> createState() => ConfigScreenState();
 }
 
-class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderStateMixin {
+class ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderStateMixin {
   late TabController _tab;
 
-  // Field controllers — keyed to match the Python _fields dict exactly
   late final Map<String, TextEditingController> _ctrl;
 
   @override
@@ -30,32 +29,25 @@ class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderSt
     _tab = TabController(length: 8, vsync: this);
 
     _ctrl = {
-      // Identity
       'node_name':         TextEditingController(),
       'serial_num':        TextEditingController(),
-      // WiFi
       'wifi_ssid':         TextEditingController(),
       'wifi_pass':         TextEditingController(),
-      // Email
       'smtp_host':         TextEditingController(),
       'smtp_port':         TextEditingController(),
       'author_email':      TextEditingController(),
       'author_pass':       TextEditingController(),
       'recip_email':       TextEditingController(),
-      // Battery
       'bat_ratio':         TextEditingController(),
       'bat_low_v':         TextEditingController(),
       'bat_check_ms':      TextEditingController(),
-      // Sensors
       'trig_us':           TextEditingController(),
       'dist_empty_cm':     TextEditingController(),
       'confirm_rdgs':      TextEditingController(),
       'sensor_period_ms':  TextEditingController(),
       'watchdog_ms':       TextEditingController(),
-      // Fan
       'fan_on_temp':       TextEditingController(),
       'fan_off_temp':      TextEditingController(),
-      // HMI
       'hmi_up1':           TextEditingController(),
       'hmi_dn1':           TextEditingController(),
       'hmi_up2':           TextEditingController(),
@@ -65,7 +57,6 @@ class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderSt
       'hmi_tail':          TextEditingController(),
     };
 
-    // Pre-populate from already-fetched settings
     WidgetsBinding.instance.addPostFrameCallback((_) => _populateFields());
   }
 
@@ -83,16 +74,15 @@ class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> save() async {
     final svc = context.read<SerialService>();
     final fields = _ctrl.map((k, v) => MapEntry(k, v.text));
     await svc.saveSettings(fields);
-    // Keep fan thresholds in sync for log display
     svc.settings['fan_on_temp']  = _ctrl['fan_on_temp']!.text;
     svc.settings['fan_off_temp'] = _ctrl['fan_off_temp']!.text;
   }
 
-  Future<void> _reboot() async {
+  Future<void> reboot() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -120,18 +110,13 @@ class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final svc = context.watch<SerialService>();
 
-    return Scaffold(
-      backgroundColor: kBG,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(svc),
-            _buildLiveStrip(svc),
-            _buildTabBar(),
-            Expanded(child: _buildTabViews(svc)),
-          ],
-        ),
-      ),
+    return Column(
+      children: [
+        _buildTopBar(svc),
+        _buildLiveStrip(svc),
+        _buildTabBar(),
+        Expanded(child: _buildTabViews(svc)),
+      ],
     );
   }
 
@@ -165,10 +150,10 @@ class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderSt
 
   Widget _buildLiveStrip(SerialService svc) {
     final nodeName = svc.settings['node_name'] ?? '–';
-    final sn = svc.settings['serial_num'] ?? '–';
-    final bat  = svc.batV    != null ? '${svc.batV!.toStringAsFixed(2)} V'  : '–';
+    final sn   = svc.settings['serial_num'] ?? '–';
+    final bat  = svc.batV     != null ? '${svc.batV!.toStringAsFixed(2)} V'   : '–';
     final temp = svc.chipTemp != null ? '${svc.chipTemp!.toStringAsFixed(1)}°C' : '–';
-    final fan  = svc.fanOn   != null ? (svc.fanOn! ? 'ON' : 'OFF') : '–';
+    final fan  = svc.fanOn    != null ? (svc.fanOn! ? 'ON' : 'OFF') : '–';
     final s1   = svc.s1Pct   != null ? '${svc.s1Pct}%' : '–';
     final s2   = svc.s2Pct   != null ? '${svc.s2Pct}%' : '–';
 
@@ -194,14 +179,14 @@ class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderSt
 
   Widget _buildTabBar() {
     const tabs = [
-      Tab(text: '🔒 Identity'),
-      Tab(text: '📡 WiFi'),
-      Tab(text: '📧 Email'),
-      Tab(text: '🔋 Battery'),
-      Tab(text: '📊 Sensors'),
-      Tab(text: '🌡 Fan'),
-      Tab(text: '🖥 HMI'),
-      Tab(text: '📋 Log'),
+      Tab(text: 'Identity'),
+      Tab(text: 'WiFi'),
+      Tab(text: 'Email'),
+      Tab(text: 'Battery'),
+      Tab(text: 'Sensors'),
+      Tab(text: 'Fan'),
+      Tab(text: 'HMI'),
+      Tab(text: 'Log'),
     ];
     return Container(
       color: kBG2,
@@ -232,10 +217,6 @@ class _ConfigScreenState extends State<ConfigScreen> with SingleTickerProviderSt
   }
 }
 
-// ── Action FAB strip at bottom ──────────────────────────────────
-// Shown as a persistent bottom bar inside each tab via the parent Scaffold.
-// We expose _save and _reboot via InheritedWidget pattern — simpler here
-// to just include a bottom bar widget used by the Scaffold.
 class ActionBar extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onReboot;
@@ -272,7 +253,8 @@ class ActionBar extends StatelessWidget {
           TextButton.icon(
             onPressed: onDisconnect,
             icon: const Icon(Icons.usb_off, size: 16, color: kFGDim),
-            label: const Text('Disconnect', style: TextStyle(color: kFGDim, fontFamily: 'monospace', fontSize: 12)),
+            label: const Text('Disconnect',
+                style: TextStyle(color: kFGDim, fontFamily: 'monospace', fontSize: 12)),
           ),
         ],
       ),

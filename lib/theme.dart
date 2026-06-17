@@ -28,7 +28,7 @@ ThemeData buildTheme() => ThemeData(
     foregroundColor: kFG,
     elevation: 0,
   ),
-  tabBarTheme: const TabBarThemeData(
+  tabBarTheme: const TabBarTheme(
     labelColor: kOrange,
     unselectedLabelColor: kFGDim,
     indicator: UnderlineTabIndicator(

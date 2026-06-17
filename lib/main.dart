@@ -28,7 +28,6 @@ class MetanoiaApp extends StatelessWidget {
   }
 }
 
-/// Switches between ConnectScreen and ConfigScreen based on connection state.
 class _Root extends StatelessWidget {
   const _Root();
 
@@ -39,34 +38,26 @@ class _Root extends StatelessWidget {
   }
 }
 
-/// Wraps ConfigScreen with the persistent Save/Reboot/Disconnect action bar.
-class _ConfigWithActions extends StatelessWidget {
+class _ConfigWithActions extends StatefulWidget {
   const _ConfigWithActions();
+
+  @override
+  State<_ConfigWithActions> createState() => _ConfigWithActionsState();
+}
+
+class _ConfigWithActionsState extends State<_ConfigWithActions> {
+  final _configKey = GlobalKey<ConfigScreenState>();
 
   @override
   Widget build(BuildContext context) {
     final svc = context.read<SerialService>();
-
-    Future<void> save() async {
-      // ConfigScreen exposes controllers via its state; we trigger save
-      // through a GlobalKey approach — simpler: lift controllers up here.
-      // Since controllers live in ConfigScreen's State, we use a callback key.
-      _configKey.currentState?._save();
-    }
-
-    Future<void> reboot() async {
-      _configKey.currentState?._reboot();
-    }
-
     return Scaffold(
       body: ConfigScreen(key: _configKey),
       bottomNavigationBar: ActionBar(
-        onSave:       () => _configKey.currentState?._save(),
-        onReboot:     () => _configKey.currentState?._reboot(),
+        onSave:       () => _configKey.currentState?.save(),
+        onReboot:     () => _configKey.currentState?.reboot(),
         onDisconnect: () => svc.disconnect(),
       ),
     );
   }
 }
-
-final _configKey = GlobalKey<_ConfigScreenState>();
